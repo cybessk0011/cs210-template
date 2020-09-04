@@ -43,7 +43,7 @@ public class Range implements Driver {
 		int upper = Integer.parseInt(matcher.group(1));
 		String name = matcher.group(2) != null ? matcher.group(2) : "number";
 		
-		Table table = new Table(
+		Table result_table = new Table(
 			SearchList.of(
 				"table_name", "_range",
 				"column_names", List.of(name),
@@ -56,9 +56,9 @@ public class Range implements Driver {
 		for (int i = 0; i < upper; i++) {
 			List<Object> row = new LinkedList<>();
 			row.add(i);
-			table.state().put(i, row);
+			result_table.state().put(i, row);
 		}
 		
-		return new Response(query, true, null, table);
+		return new Response(query, true, null, result_table);
 	}
 }
