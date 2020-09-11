@@ -30,51 +30,51 @@ public abstract class SQLModule {
 	protected static Object[][] query_data;
 	protected static Object[][] serial_data;
 	protected static Table actual_table;
-	
+
 	protected static Arguments[] data() {
 		var arguments = new Arguments[query_data.length];
-		
+
 		for (var a = 0; a < arguments.length; a++) {
 			Table table = null;
-			
+
 			if (serial_data[a] != null) {
 				var i = 0;
-				
+
 				var table_name = (String) serial_data[a][i++];
-				
+
 				var schema_size = (Integer) serial_data[a][i++];
 				var primary_index = (Integer) serial_data[a][i++];
-				
+
 				var column_names = new LinkedList<String>();
 				for (var j = 1; j <= schema_size; j++)
 					column_names.add((String) serial_data[a][i++]);
-				
+
 				var column_types = new LinkedList<String>();
 				for (var j = 1; j <= schema_size; j++)
 					column_types.add((String) serial_data[a][i++]);
-				
+
 				Map<String, Object> schema = SearchList.of(
 					"table_name", table_name,
 					"column_names", column_names,
 					"column_types", column_types,
 					"primary_index", primary_index
 				);
-				
+
 				Map<Object, List<Object>> state = new SearchList<>();
 
 				for (var j = i; j < serial_data[a].length; j += schema_size) {
 					var key = serial_data[a][j+primary_index];
 					var value = new LinkedList<>();
-					
+
 					for (var k = 0; k < schema_size; k++)
 						value.add(serial_data[a][j+k]);
-					
+
 					state.put(key, value);
 				}
-				
+
 				table = new Table(schema, state);
 			}
-			
+
 			arguments[a] = Arguments.of(
 				query_data[a][0],
 				query_data[a][1],
@@ -83,12 +83,12 @@ public abstract class SQLModule {
 				table
 			);
 		}
-		
+
 		return arguments;
 	}
-	
+
 	@DisplayName("Queries")
-	@ParameterizedTest(name = "[{index}] {1}")
+	@ParameterizedTest(name = "[{index}] {2}")
 	@MethodSource("data")
 	protected void testQuery(
 		boolean success,
@@ -98,12 +98,12 @@ public abstract class SQLModule {
 		Table expected_table
 	) {
 		total++;
-		
+
 		System.out.println(sql);
-		
+
 		var queries = Arrays.asList(sql.split("\\s*;\\s*"));
 		var count = queries.size();
-		
+
 		List<Response> responses;
 		try {
 			responses = DB.interpret(queries);
@@ -112,7 +112,7 @@ public abstract class SQLModule {
 			fail("Interpreter must not throw exceptions", e);
 			return;
 		}
-		
+
 		Response last;
 		try {
 			last = responses.get(responses.size()-1);
@@ -121,7 +121,7 @@ public abstract class SQLModule {
 			fail("Interpreter must return non-null and non-empty list of responses");
 			return;
 		}
-		
+
 		assertEquals(
 			count,
 			responses.stream().filter(it -> it != null).count(),
@@ -130,7 +130,7 @@ public abstract class SQLModule {
 				count == 1 ? "Query" : "Script"
 			)
 		);
-		
+
 		assertEquals(
 			count == 1 ? success : Stream.concat(Stream.generate(() -> true).limit(count-1), Stream.of(success)).collect(Collectors.toList()),
 			count == 1 ? last.success() : responses.stream().map(it -> it.success()).collect(Collectors.toList()),
@@ -147,7 +147,7 @@ public abstract class SQLModule {
 		);
 
 		actual_table = null;
-		
+
 		String friendly_name = null;
 		if (table_name != null) {
 			if (table_name.startsWith("_")) {
@@ -159,7 +159,7 @@ public abstract class SQLModule {
 				friendly_name = String.format("table <%s> in the database", table_name);
 			}
 		}
-			
+
 		if (expected_table != null) {
 			assertNotNull(
 				actual_table,
@@ -168,7 +168,7 @@ public abstract class SQLModule {
 					friendly_name
 				)
 			);
-			
+
 			if (expected_table.schema() != null) {
 				assertNotNull(
 					actual_table.schema(),
@@ -177,7 +177,7 @@ public abstract class SQLModule {
 						friendly_name
 					)
 				);
-				
+
 				if (actual_table.schema() != null) {
 					assertEquals(
 						expected_table.schema().get("table_name"),
@@ -187,7 +187,7 @@ public abstract class SQLModule {
 							friendly_name
 						)
 					);
-					
+
 					assertEquals(
 						expected_table.schema().get("column_names"),
 						actual_table.schema().get("column_names"),
@@ -196,7 +196,7 @@ public abstract class SQLModule {
 							friendly_name
 						)
 					);
-					
+
 					assertEquals(
 						expected_table.schema().get("column_types"),
 						actual_table.schema().get("column_types"),
@@ -205,7 +205,7 @@ public abstract class SQLModule {
 							friendly_name
 						)
 					);
-					
+
 					assertEquals(
 						expected_table.schema().get("primary_index"),
 						actual_table.schema().get("primary_index"),
@@ -216,7 +216,7 @@ public abstract class SQLModule {
 					);
 				}
 			}
-		
+
 			if (expected_table.state() != null) {
 				assertNotNull(
 					actual_table.state(),
@@ -225,7 +225,7 @@ public abstract class SQLModule {
 						friendly_name
 					)
 				);
-				
+
 				if (actual_table.state() != null) {
 					assertEquals(
 						expected_table.state(),
@@ -238,10 +238,10 @@ public abstract class SQLModule {
 				}
 			}
 		}
-		
+
 		passed++;
 	}
-	
+
 	@AfterAll
 	protected static void report() throws IOException {
 		System.out.printf(
@@ -249,7 +249,7 @@ public abstract class SQLModule {
 			module_tag,
 			(int) Math.ceil(passed / (double) total * 100)
 		);
-		
+
 		DB.close();
 	}
 }
